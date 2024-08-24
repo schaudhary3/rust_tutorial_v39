@@ -33,9 +33,7 @@ async fn get_file(file_name: String) -> Option<NamedFile> {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![hello])
-    .mount("/", routes![health_check])
-    .mount("/", routes![get_file])
+    rocket::build().mount("/", routes![hello, health_check, get_file])
 }
 
 //let data = Map

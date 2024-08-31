@@ -1,0 +1,5 @@
+CREATE TABLE items (
+  uuid INTEGER PRIMARY KEY,
+  name VARCHAR,
+  number INTEGER
+)

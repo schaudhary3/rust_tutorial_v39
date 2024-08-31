@@ -1,55 +1,58 @@
 #[macro_use] extern crate rocket;
 
-//use rocket::fs::NamedFile;
-use rocket::get;
-//use sqlx::postgres::PgDatabaseError;
-//use std::path::{Path, PathBuf};
-//use rocket::fairing::AdHoc;
-//use rocket::{Build, Rocket};
-//use rocket::Rocket;
-//use sqlx::PgPool;
-//use sqlx::{PgConnection, Error};
-use sqlx::Error;
+pub mod model;
+pub mod schema;
+
+use self::schema::items::dsl::*;
+use crate::model::Item; 
+
 use serde::{Serialize, Deserialize};
-//use rocket_sync_db_pools::database;
-use rocket_db_pools::{Connection, Database};
-use rocket_db_pools::deadpool_postgres;
 use dotenv::dotenv;
-use sqlx::FromRow;
+use rocket::response::status::{Created, NoContent, NotFound};
+use rocket::serde::json::Json;
+use diesel::prelude::*;
+use rocket_sync_db_pools::{database, diesel};
 
-#[derive(Database)]
-//struct Db(PgPool);
-#[database("sqlx")]
-pub struct Db(deadpool_postgres::Pool);
-//struct RowCount(i64);
-
-#[derive(FromRow, Serialize, Deserialize)]
-pub struct Item {
-    #[sqlx(default)]
-    uuid: Option<i32>,
-    #[sqlx(default)]
-    name: Option<String>,
-    #[sqlx(default)]
-    number: Option<i32>
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(crate = "rocket::serde")]
+pub struct ApiError {
+    pub details: String,
 }
+#[database("my_db")] 
+struct MyDatabase(diesel::PgConnection);
 
-#[get("/one")]
-async fn get_recd(db: Connection<Db>) -> Result<Item, Error> {
-    let recd = sqlx::query_as!(Item, "SELECT * FROM (SELECT (1) as uuid, 'J' as name, 9 as number) AS item where uuid = $1", 1)
-    .fetch_one(& **db)
-    .await;
+#[get("/item/<other_uuid>")]
+async fn get_result(db: MyDatabase, other_uuid: i32) -> Result<Json<Item>, NotFound<Json<ApiError>>> {
     
-    recd
+    db
+        .run(move |c| items.filter(uuid.eq(other_uuid)).first(c))
+        .await
+        .map(Json)
+        .map_err(|e| {
+            NotFound(Json(ApiError {
+                details: e.to_string(),
+            }))
+        })
 }
 
-
+#[get("/item")]
+async fn get_result_(db: MyDatabase) -> Result<Json<Item>, NotFound<Json<ApiError>>> {
+    
+    db
+        .run(move |c| items.filter(uuid.eq(1)).first(c))
+        .await
+        .map(Json)
+        .map_err(|e| {
+            NotFound(Json(ApiError {
+                details: e.to_string(),
+            }))
+        })
+}
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();
 
     rocket::build()
-        .attach(Db::init())
-        .mount("/", routes![get_recd])
+        .attach(MyDatabase::fairing())
+        .mount("/", routes![get_result, get_result_])
 }
-
-//.map_err(|e: PgDatabaseError| e.to_string())?;

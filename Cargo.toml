@@ -6,14 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = "0.5.1"
-sqlx = {version = "0.8.1", features = ["postgres", "runtime-async-std", "macros"]}
-#rocket_sync_db_pools = {version = "0.1.0", features = ["sqlx-postgres"]}
-#rocket_sync_db_pools = "0.1.0"
-rocket_db_pools = {version = "0.2.0", features = ["deadpool_postgres"]}
-rocket_codegen = "0.5.1"
+rocket = { version = "0.5.1", features = ["json"] }
+diesel = {version = "2.2.0", features = ["postgres"]}
 serde = {version = "1.0", features = ["derive"]}
 dotenv = "0.15.0"
+rocket_sync_db_pools = { version = "0.1.0", features = ["diesel", "diesel_postgres_pool"] }
+dotenvy = "0.15"
 
-[global.databases]
-postgres_db = { url = { env = "DATABASE_URL" } }
+#[global.databases]
+#my_db = { url = { env = "DATABASE_URL" } }
